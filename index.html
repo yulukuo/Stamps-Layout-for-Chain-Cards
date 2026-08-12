@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Stamp Layout Studio</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;background:#f3f5f7;color:#202124}
+header{height:60px;background:#fff;border-bottom:1px solid #dfe1e5;display:flex;align-items:center;padding:0 18px;gap:12px}
+h1{font-size:19px;margin:0;font-weight:750;letter-spacing:-.2px}.brand-dot{width:10px;height:10px;border-radius:50%;background:#1769e0}.spacer{flex:1}
+button,select,input{font:inherit}button{border:1px solid #c8ccd1;background:#fff;border-radius:7px;padding:7px 11px;cursor:pointer}button:hover{background:#f5f6f7}.primary{background:#1769e0;color:#fff;border-color:#1769e0}.primary:hover{background:#0d5dcc}
+main{display:flex;height:calc(100vh - 60px)}
+aside{width:300px;background:#fff;border-right:1px solid #dfe1e5;padding:16px;overflow:auto}.section{margin-bottom:21px}.title{font-weight:700;margin-bottom:9px;font-size:14px}.row{display:flex;gap:8px;align-items:center;margin:8px 0}.row label{font-size:12px;width:78px;color:#555}.row input,.row select{flex:1;min-width:0;padding:7px;border:1px solid #c8ccd1;border-radius:6px;background:#fff}
+.library-item{border:1px solid #ddd;border-radius:8px;padding:9px;margin:7px 0;display:flex;align-items:center;gap:9px}.shape-icon{width:28px;height:28px;border:2px solid #555;flex:none}.circle{border-radius:50%}.lib-info{flex:1;min-width:0;font-size:12px}.muted{color:#6b7075;font-size:11px}.danger{color:#b42318}
+.help{font-size:11px;line-height:1.55;color:#666;background:#f7f8fa;padding:10px;border-radius:8px}
+.workspace{flex:1;display:flex;flex-direction:column;min-width:0}.toolbar{height:52px;background:#fff;border-bottom:1px solid #dfe1e5;display:flex;align-items:center;gap:8px;padding:8px 12px}.toolbar .zoom{width:66px;text-align:center}.stage-wrap{flex:1;overflow:auto;padding:42px 52px;background:#dfe3e8;display:flex;justify-content:center;align-items:flex-start}
+#stage{position:relative;background:#fff;box-shadow:0 3px 18px #0002;transform-origin:top left}.grid{position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(#d4d7dc66 1px,transparent 1px),linear-gradient(90deg,#d4d7dc66 1px,transparent 1px);background-size:10px 10px}
+.ruler-x,.ruler-y{position:absolute;background:#fafafa;color:#777;font-size:9px;pointer-events:none}.ruler-x{height:18px;left:0;top:-18px;width:100%;border-bottom:1px solid #aaa}.ruler-y{width:28px;left:-28px;top:0;height:100%;border-right:1px solid #aaa}
+.item{position:absolute;border:1.5px solid #1769e0;background:#e8f0feaa;cursor:move;display:flex;align-items:center;justify-content:center;user-select:none;transform-origin:center}.item.circle{border-radius:50%}.item.selected{outline:2px solid #ff7a00;outline-offset:2px}.item span{font-size:9px;color:#1355b0;text-align:center;pointer-events:none}.handle{position:absolute;width:10px;height:10px;background:#fff;border:1.5px solid #1769e0;border-radius:2px;right:-6px;bottom:-6px;cursor:nwse-resize}.rotate{position:absolute;left:50%;top:-25px;transform:translateX(-50%);width:18px;height:18px;border-radius:50%;background:#1769e0;color:#fff;font-size:11px;line-height:18px;text-align:center;cursor:grab}
+.empty{color:#777;font-size:12px;padding:8px 0}.mini-actions{display:flex;gap:6px}.mini-actions button{flex:1}
+.modal-backdrop{display:none;position:fixed;inset:0;background:#0006;z-index:20;align-items:center;justify-content:center}.modal{background:#fff;border-radius:12px;width:min(500px,calc(100vw - 30px));padding:20px;box-shadow:0 15px 50px #0004}.modal h2{margin:0 0 12px;font-size:18px}.modal p,.modal li{font-size:13px;line-height:1.6}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:15px}
+@media(max-width:800px){aside{width:260px}.stage-wrap{padding:35px 30px}}@media(max-width:650px){main{display:block;overflow:auto}aside{width:100%;height:auto;border-right:0;border-bottom:1px solid #dfe1e5}.workspace{height:70vh}.toolbar{overflow:auto;white-space:nowrap}}
+</style>
+</head>
+<body>
+<header>
+<span class="brand-dot"></span><h1>Stamp Layout Studio</h1>
+<div class="spacer"></div>
+<button onclick="openHelp()">How to use</button>
+<button onclick="saveProject()">Save Project</button>
+<button onclick="loadProject()">Load Project</button>
+<button class="primary" onclick="downloadPDF()">Download PDF</button>
+</header>
+<main>
+<aside>
+<div class="section">
+<div class="title">Paper</div>
+<div class="row"><label>Size</label><select id="paper" onchange="setPaper()"><option value="A4">A4 · 210 × 297 mm</option><option value="A6">A6 Postcard · 105 × 148 mm</option><option value="CUSTOM">Custom Size</option></select></div>
+<div id="customPaper" style="display:none">
+<div class="row"><label>Width (mm)</label><input id="customW" type="number" value="105" min="1" step=".1"></div>
+<div class="row"><label>Height (mm)</label><input id="customH" type="number" value="148" min="1" step=".1"></div>
+<button style="width:100%" onclick="applyCustomPaper()">Apply Custom Size</button>
+</div>
+<div class="row"><label>Orientation</label><select id="orientation" onchange="setPaper()"><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></div>
+</div>
+<div class="section">
+<div class="title">Stamp Presets</div>
+<div class="row"><label>Name</label><input id="name" value="My Stamp"></div>
+<div class="row"><label>Shape</label><select id="shape"><option value="rect">Rectangle</option><option value="circle">Circle</option></select></div>
+<div class="row"><label>Width (mm)</label><input id="w" type="number" value="30" min="1" step=".1"></div>
+<div class="row"><label>Height (mm)</label><input id="h" type="number" value="40" min="1" step=".1"></div>
+<button class="primary" style="width:100%" onclick="addLibrary()">+ Add Preset</button>
+<div id="library"></div>
+</div>
+<div class="section">
+<div class="title">Selected Stamp</div><div id="props"><div class="empty">Select a stamp on the canvas.</div></div>
+</div>
+<div class="section">
+<div class="title">Actions</div>
+<div class="mini-actions"><button onclick="duplicateSelected()">Duplicate</button><button onclick="deleteSelected()">Delete</button><button onclick="clearAll()">Clear</button></div>
+</div>
+<div class="section help">
+<b>Quick tips</b><br>
+Drag a stamp to move it.<br>
+Use the corner handle to resize.<br>
+Use the blue rotate handle to rotate.<br>
+All measurements are in real millimeters.
+</div>
+</aside>
+<div class="workspace">
+<div class="toolbar">
+<button onclick="zoom(-.1)">−</button><input class="zoom" id="zoomVal" value="100%" readonly><button onclick="zoom(.1)">＋</button><button onclick="resetZoom()">100%</button>
+<span class="muted" id="paperInfo"></span><span class="spacer"></span>
+<label class="muted">Grid <input type="checkbox" id="gridToggle" checked onchange="document.querySelector('.grid').style.display=this.checked?'block':'none'"></label>
+</div>
+<div class="stage-wrap"><div id="stage"><div class="grid"></div><div class="ruler-x"></div><div class="ruler-y"></div></div></div>
+</div>
+</main>
+
+<div class="modal-backdrop" id="helpModal" onclick="if(event.target===this)closeHelp()">
+<div class="modal">
+<h2>How to use Stamp Layout Studio</h2>
+<ol>
+<li>Choose <b>A4</b>, <b>A6 Postcard</b>, or enter a <b>Custom Size</b>.</li>
+<li>Create a stamp preset by choosing its shape and dimensions in millimeters.</li>
+<li>Click <b>Add to canvas</b> beside a preset.</li>
+<li>Drag, resize, or rotate stamps freely on the canvas.</li>
+<li>Use the Selected Stamp panel for exact X, Y, width, height, and rotation values.</li>
+<li>Click <b>Download PDF</b> to create a print-ready PDF at the selected paper size.</li>
+</ol>
+<p><b>Printing:</b> choose 100% / Actual Size in your printer dialog. Turn off “Fit to page” or automatic scaling.</p>
+<div class="modal-actions"><button onclick="closeHelp()">Close</button></div>
+</div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+const PX=3.7795275591;
+let paper={w:210,h:297},zoomLevel=1,library=[],items=[],selected=null,drag=null;
+function setPaper(){
+ const p=document.getElementById('paper').value,o=document.getElementById('orientation').value;
+ document.getElementById('customPaper').style.display=p==='CUSTOM'?'block':'none';
+ let sizes={A4:[210,297],A6:[105,148]};
+ if(p==='CUSTOM'){let w=+document.getElementById('customW').value||105,h=+document.getElementById('customH').value||148;if(o==='landscape')[w,h]=[h,w];paper={w,h};render();return}
+ let [w,h]=sizes[p];if(o==='landscape')[w,h]=[h,w];paper={w,h};render();
+}
+function applyCustomPaper(){const w=+customW.value,h=+customH.value;if(!(w>0&&h>0)){alert('Please enter positive dimensions.');return}paper={w,h};paperSelectToCustom();setPaper()}
+function paperSelectToCustom(){document.getElementById('paper').value='CUSTOM'}
+function addLibrary(){
+ const d={id:crypto.randomUUID(),name:document.getElementById('name').value||'My Stamp',shape:document.getElementById('shape').value,w:+document.getElementById('w').value,h:+document.getElementById('h').value};
+ if(d.shape==='circle')d.h=d.w;library.push(d);renderLibrary()
+}
+function renderLibrary(){const el=document.getElementById('library');el.innerHTML='';library.forEach(d=>{const row=document.createElement('div');row.className='library-item';row.innerHTML=`<span class="shape-icon ${d.shape==='circle'?'circle':''}"></span><div class="lib-info"><b>${esc(d.name)}</b><div class="muted">${d.shape==='circle'?'Ø '+d.w+' mm':d.w+' × '+d.h+' mm'}</div></div><button>Add to canvas</button>`;row.querySelector('button').onclick=()=>addItem(d);el.appendChild(row)})}
+function addItem(d){const item={id:crypto.randomUUID(),...d,x:10,y:10,rot:0};items.push(item);selected=item.id;render()}
+function render(){
+ const stage=document.getElementById('stage');stage.style.width=paper.w*PX+'px';stage.style.height=paper.h*PX+'px';[...stage.querySelectorAll('.item')].forEach(e=>e.remove());
+ items.forEach(it=>{const e=document.createElement('div');e.className='item '+(it.shape==='circle'?'circle ':'')+(selected===it.id?'selected':'');e.style.left=it.x*PX+'px';e.style.top=it.y*PX+'px';e.style.width=it.w*PX+'px';e.style.height=it.h*PX+'px';e.style.transform=`rotate(${it.rot}deg)`;e.innerHTML=`<span>${esc(it.name)}<br>${it.shape==='circle'?'Ø '+it.w:it.w+' × '+it.h} mm</span><div class="handle"></div><div class="rotate">↻</div>`;e.onmousedown=ev=>startDrag(ev,it,e);e.querySelector('.handle').onmousedown=ev=>startResize(ev,it);e.querySelector('.rotate').onmousedown=ev=>startRotate(ev,it,e);stage.appendChild(e)});
+ updateProps();document.getElementById('zoomVal').value=Math.round(zoomLevel*100)+'%';document.getElementById('paperInfo').textContent=`Canvas ${paper.w.toFixed(1)} × ${paper.h.toFixed(1)} mm`;stage.style.transform=`scale(${zoomLevel})`;
+}
+function startDrag(ev,it){if(ev.target.classList.contains('handle')||ev.target.classList.contains('rotate'))return;ev.preventDefault();selected=it.id;drag={type:'move',it,sx:ev.clientX,sy:ev.clientY,ox:it.x,oy:it.y};render();window.onmousemove=move;window.onmouseup=end}
+function startResize(ev,it){ev.stopPropagation();ev.preventDefault();selected=it.id;drag={type:'resize',it,sx:ev.clientX,sy:ev.clientY,ow:it.w,oh:it.h};window.onmousemove=move;window.onmouseup=end}
+function startRotate(ev,it,e){ev.stopPropagation();ev.preventDefault();selected=it.id;const r=e.getBoundingClientRect();drag={type:'rotate',it,cx:r.left+r.width/2,cy:r.top+r.height/2};window.onmousemove=move;window.onmouseup=end}
+function move(ev){if(!drag)return;const it=drag.it;if(drag.type==='move'){it.x=Math.max(0,drag.ox+(ev.clientX-drag.sx)/(PX*zoomLevel));it.y=Math.max(0,drag.oy+(ev.clientY-drag.sy)/(PX*zoomLevel))}if(drag.type==='resize'){it.w=Math.max(1,drag.ow+(ev.clientX-drag.sx)/(PX*zoomLevel));it.h=it.shape==='circle'?it.w:Math.max(1,drag.oh+(ev.clientY-drag.sy)/(PX*zoomLevel))}if(drag.type==='rotate'){it.rot=Math.round(Math.atan2(ev.clientY-drag.cy,ev.clientX-drag.cx)*180/Math.PI+90)}render()}
+function end(){drag=null;window.onmousemove=null;window.onmouseup=null}
+function updateProps(){
+ const box=document.getElementById('props'),it=items.find(x=>x.id===selected);if(!it){box.innerHTML='<div class="empty">Select a stamp on the canvas.</div>';return}
+ box.innerHTML=`<div class="row"><label>Name</label><input id="pn" value="${esc(it.name)}"></div><div class="row"><label>X (mm)</label><input id="px" type="number" value="${it.x.toFixed(1)}" step=".1"></div><div class="row"><label>Y (mm)</label><input id="py" type="number" value="${it.y.toFixed(1)}" step=".1"></div><div class="row"><label>Width (mm)</label><input id="pw" type="number" value="${it.w.toFixed(1)}" step=".1"></div><div class="row"><label>Height (mm)</label><input id="ph" type="number" value="${it.h.toFixed(1)}" step=".1"></div><div class="row"><label>Rotation</label><input id="pr" type="number" value="${it.rot}" step="1"></div>`;
+ ['pn','px','py','pw','ph','pr'].forEach(id=>document.getElementById(id).onchange=()=>{const k={pn:'name',px:'x',py:'y',pw:'w',ph:'h',pr:'rot'}[id],v=document.getElementById(id).value;it[k]=k==='name'?v:+v;if(it.shape==='circle'&&(k==='pw'||k==='ph'))it.w=it.h=+v;render()})
+}
+function deleteSelected(){if(selected){items=items.filter(x=>x.id!==selected);selected=null;render()}}
+function duplicateSelected(){const it=items.find(x=>x.id===selected);if(!it)return;const n={...it,id:crypto.randomUUID(),x:it.x+5,y:it.y+5};items.push(n);selected=n.id;render()}
+function clearAll(){if(confirm('Clear all stamps from the canvas?')){items=[];selected=null;render()}}
+function zoom(d){zoomLevel=Math.min(2,Math.max(.5,zoomLevel+d));render()}function resetZoom(){zoomLevel=1;render()}
+function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function saveProject(){const blob=new Blob([JSON.stringify({paper,library,items},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='stamp-layout-project.json';a.click();URL.revokeObjectURL(a.href)}
+function loadProject(){const inp=document.createElement('input');inp.type='file';inp.accept='.json';inp.onchange=()=>{const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const d=JSON.parse(r.result);paper=d.paper;library=d.library||[];items=d.items||[];document.getElementById('paper').value='CUSTOM';document.getElementById('customW').value=paper.w;document.getElementById('customH').value=paper.h;document.getElementById('customPaper').style.display='block';renderLibrary();render()};r.readAsText(f)};inp.click()}
+function downloadPDF(){
+ if(!window.jspdf){alert('The PDF library could not be loaded. Please check your internet connection and try again.');return}
+ const {jsPDF}=window.jspdf;const pdf=new jsPDF({orientation:paper.w>paper.h?'landscape':'portrait',unit:'mm',format:[paper.w,paper.h],compress:true});
+ items.forEach(it=>{
+  pdf.saveGraphicsState();
+  const cx=it.x+it.w/2,cy=it.y+it.h/2,rad=it.rot*Math.PI/180,c=Math.cos(rad),s=Math.sin(rad);
+  pdf.setCurrentTransformationMatrix([c,s,-s,c,cx-c*cx+s*cy,cy-s*cx-c*cy]);
+  pdf.setDrawColor(20,20,20);pdf.setLineWidth(.25);
+  if(it.shape==='circle')pdf.circle(it.w/2,it.h/2,it.w/2,'S');else pdf.rect(it.x,it.y,it.w,it.h,'S');
+  pdf.restoreGraphicsState();
+ });
+ pdf.save('stamp-layout.pdf');
+}
+function openHelp(){document.getElementById('helpModal').style.display='flex'}function closeHelp(){document.getElementById('helpModal').style.display='none'}
+renderLibrary();render();
+</script>
+</body>
+</html>

@@ -25,10 +25,34 @@ aside{width:310px;background:#fff;border-right:1px solid #dfe1e5;padding:16px;ov
  main{display:block;overflow:auto;height:calc(100vh - 86px)}aside{width:100%;height:auto;border-right:0;border-bottom:1px solid #dfe1e5}.workspace{height:72vh;min-height:430px}.toolbar{overflow:auto;white-space:nowrap;flex-wrap:nowrap}.stage-wrap{padding:42px 30px}
 }
 </style>
+
+<style id="creator-credit-style">
+.creator-credit {
+  font-size: 0.72em;
+  font-weight: 500;
+  opacity: 0.65;
+  margin-left: 0.45rem;
+  white-space: nowrap;
+}
+.creator-credit-fallback {
+  position: fixed;
+  top: 10px;
+  left: 12px;
+  z-index: 9999;
+  pointer-events: none;
+  font-family: inherit;
+}
+@media (max-width: 600px) {
+  .creator-credit {
+    font-size: 0.68em;
+  }
+}
+</style>
+
 </head>
 <body>
 <header>
-<span class="brand-dot"></span><h1>Stamp Layout Studio</h1>
+<span class="brand-dot"> <span class="creator-credit">@yuluyulu_pc</span></span><h1>Stamp Layout Studio</h1>
 <div class="spacer"></div>
 <button onclick="openHelp()">How to use</button>
 <button onclick="saveProject()">Save Project</button>
@@ -69,7 +93,7 @@ aside{width:310px;background:#fff;border-right:1px solid #dfe1e5;padding:16px;ov
 Drag a stamp to move it.<br>
 Use the corner handle to resize.<br>
 Use the blue rotate handle to rotate.<br>
-All measurements are in real millimeters.<br>
+All measurements are in real millimeters.<br>Triangle stamps are isosceles: Base × Height.<br>
 Saved presets remain after reopening the website.
 </div>
 </aside>
@@ -78,6 +102,8 @@ Saved presets remain after reopening the website.
 <div class="toolbar">
 <button onclick="zoom(-.1)">−</button><input class="zoom" id="zoomVal" value="100%" readonly><button onclick="zoom(.1)">＋</button><button onclick="resetZoom()">100%</button>
 <span class="muted" id="paperInfo"></span><span class="spacer"></span>
+<label class="muted">PDF Paper <select id="pdfPaper"><option value="A4">A4</option><option value="A3">A3</option><option value="A5">A5</option></select></label>
+<label class="muted">Border <input type="checkbox" id="pdfBorder" checked></label>
 <label class="muted">Grid <input type="checkbox" id="gridToggle" checked onchange="document.querySelector('.grid').style.display=this.checked?'block':'none'"></label>
 </div>
 <div class="stage-wrap"><div id="stage"><div class="grid"></div><div class="ruler-x"></div><div class="ruler-y"></div></div></div>
@@ -93,7 +119,7 @@ Saved presets remain after reopening the website.
 <li>Click Add to canvas beside a preset.</li>
 <li>Drag, resize, or rotate stamps freely on the canvas. Touch/pointer input is supported on mobile.</li>
 <li>Use the Selected Stamp panel for exact X, Y, dimensions, and rotation.</li>
-<li>Click Download PDF to create a print-ready PDF at the selected physical paper size.</li>
+<li>Choose the PDF paper size (A4 by default). The canvas is placed at its real millimeter size and centered on the PDF. The canvas border can be shown or hidden.</li>
 </ol>
 <p><b>Printing:</b> choose 100% / Actual Size in your printer dialog. Turn off “Fit to page” or automatic scaling.</p>
 <div class="modal-actions"><button onclick="closeHelp()">Close</button></div>
@@ -138,7 +164,7 @@ function updatePresetFields(){
 }
 function addLibrary(){
  const shape=document.getElementById('shape').value,w=+document.getElementById('w').value,h=+document.getElementById('h').value;
- if(!(w>0)&&!(shape==='circle')){alert('Please enter a positive dimension.');return}
+ if(!(w>0)){alert('Please enter a positive dimension.');return}
  if(shape!=='circle'&&!(h>0)){alert('Please enter a positive height.');return}
  const d={id:uid(),name:document.getElementById('name').value.trim()||'My Stamp',shape,w,h:shape==='circle'?w:h};
  library.push(d);renderLibrary();persist();
@@ -148,9 +174,10 @@ function renderLibrary(){
  const el=document.getElementById('library');el.innerHTML='';
  library.forEach(d=>{
   const row=document.createElement('div');row.className='library-item';
-  row.innerHTML=`<span class="shape-icon ${d.shape==='circle'?'circle':d.shape==='triangle'?'triangle':''}"></span><div class="lib-info"><b>${esc(d.name)}</b><div class="muted">${shapeLabel(d)}</div></div><div class="mini-actions" style="flex:0 0 auto"><button class="edit-lib">Edit</button><button class="add-lib">Add</button></div>`;
+  row.innerHTML=`<span class="shape-icon ${d.shape==='circle'?'circle':d.shape==='triangle'?'triangle':''}"></span><div class="lib-info"><b>${esc(d.name)}</b><div class="muted">${shapeLabel(d)}</div></div><div class="mini-actions" style="flex:0 0 auto"><button class="edit-lib">Edit</button><button class="add-lib">Add</button><button class="delete-lib danger">Delete</button></div>`;
   row.querySelector('.add-lib').onclick=()=>addItem(d);
   row.querySelector('.edit-lib').onclick=()=>editLibrary(d.id);
+  row.querySelector('.delete-lib').onclick=()=>deleteLibrary(d.id);
   el.appendChild(row);
  });
 }
@@ -254,24 +281,44 @@ function rotatedPoint(x,y,cx,cy,rad){const dx=x-cx,dy=y-cy,c=Math.cos(rad),s=Mat
 function drawPolygon(pdf,pts){
  for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length];pdf.line(a[0],a[1],b[0],b[1])}
 }
+function getPdfPaperSize(){
+ const preset=document.getElementById('pdfPaper')?.value||'A4';
+ const sizes={A4:[210,297],A3:[297,420],A5:[148,210]};
+ return sizes[preset]||sizes.A4;
+}
 function downloadPDF(){
  if(!window.jspdf){alert('The PDF library could not be loaded. Please check your internet connection and try again.');return}
  const {jsPDF}=window.jspdf;
- const pdf=new jsPDF({orientation:paper.w>paper.h?'landscape':'portrait',unit:'mm',format:[paper.w,paper.h],compress:true});
- pdf.setProperties({title:'Stamp Layout',subject:'Stamp layout exported at real millimeter dimensions'});
+ const [pdfW,pdfH]=getPdfPaperSize();
+ const pdf=new jsPDF({orientation:pdfW>pdfH?'landscape':'portrait',unit:'mm',format:[pdfW,pdfH],compress:true});
+ pdf.setProperties({title:'Stamp Layout',subject:'Stamp layout exported onto a PDF sheet at real millimeter dimensions'});
+ const offsetX=(pdfW-paper.w)/2;
+ const offsetY=(pdfH-paper.h)/2;
+ if(offsetX<0||offsetY<0){
+   alert(`The ${document.getElementById('pdfPaper')?.value||'A4'} PDF is smaller than the current canvas (${paper.w.toFixed(1)} × ${paper.h.toFixed(1)} mm). Please choose a larger PDF paper size.`);
+   return;
+ }
+ if(document.getElementById('pdfBorder')?.checked){
+   pdf.setDrawColor(120,120,120);pdf.setLineWidth(.25);pdf.rect(offsetX,offsetY,paper.w,paper.h,'S');
+ }
  items.forEach(it=>{
-  const cx=it.x+it.w/2,cy=it.y+it.h/2,rad=it.rot*Math.PI/180;
+  const cx=offsetX+it.x+it.w/2,cy=offsetY+it.y+it.h/2,rad=it.rot*Math.PI/180;
   pdf.saveGraphicsState();pdf.setDrawColor(20,20,20);pdf.setLineWidth(.25);
   if(it.shape==='circle'){
    const r=it.w/2;pdf.circle(cx,cy,r,'S');
   }else if(it.shape==='triangle'){
-   const local=[[it.w/2,0],[it.w,it.h],[0,it.h]].map(([x,y])=>rotatedPoint(it.x+x,it.y+y,cx,cy,rad));drawPolygon(pdf,local);
+   const local=[[it.w/2,0],[it.w,it.h],[0,it.h]].map(([x,y])=>rotatedPoint(offsetX+it.x+x,offsetY+it.y+y,cx,cy,rad));
+   drawPolygon(pdf,local);
   }else{
-   const local=[[it.x,it.y],[it.x+it.w,it.y],[it.x+it.w,it.y+it.h],[it.x,it.y+it.h]].map(([x,y])=>rotatedPoint(x,y,cx,cy,rad));drawPolygon(pdf,local);
+   const local=[[offsetX+it.x,offsetY+it.y],[offsetX+it.x+it.w,offsetY+it.y],
+     [offsetX+it.x+it.w,offsetY+it.y+it.h],[offsetX+it.x,offsetY+it.y+it.h]]
+     .map(([x,y])=>rotatedPoint(x,y,cx,cy,rad));
+   drawPolygon(pdf,local);
   }
   pdf.restoreGraphicsState();
  });
- pdf.save('stamp-layout.pdf');
+ const preset=document.getElementById('pdfPaper')?.value||'A4';
+ pdf.save(`stamp-layout-${preset.toLowerCase()}.pdf`);
 }
 function openHelp(){document.getElementById('helpModal').style.display='flex'}function closeHelp(){document.getElementById('helpModal').style.display='none'}
 

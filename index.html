@@ -74,7 +74,7 @@ aside{width:310px;background:#fff;border-right:1px solid #dfe1e5;padding:16px;ov
 
 <div class="section">
 <div class="title">Stamp Presets</div>
-<div class="row"><label>Name</label><input id="name" value="My Stamp"></div>
+<div class="row"><label>Name</label><input id="name" value="My Stamp" maxlength="60" pattern="[A-Za-z0-9 _-]+" title="Use English letters, numbers, spaces, _ or - only"></div>
 <div class="row"><label>Shape</label><select id="shape" onchange="updatePresetFields()"><option value="rect">Rectangle</option><option value="circle">Circle</option><option value="triangle">Triangle</option></select></div>
 <div class="row" id="widthRow"><label id="widthLabel">Width (mm)</label><input id="w" type="number" value="30" min="1" step=".1"></div>
 <div class="row" id="heightRow"><label id="heightLabel">Height (mm)</label><input id="h" type="number" value="40" min="1" step=".1"></div>
@@ -169,7 +169,7 @@ function addLibrary(){
  const d={id:uid(),name:document.getElementById('name').value.trim()||'My Stamp',shape,w,h:shape==='circle'?w:h};
  library.push(d);renderLibrary();persist();
 }
-function shapeLabel(d){return d.shape==='circle'?'Ø '+d.w+' mm':d.shape==='triangle'?'Base '+d.w+' × Height '+d.h+' mm':d.w+' × '+d.h+' mm'}
+function shapeLabel(d){return d.shape==='circle'?'Diameter '+d.w+' mm':d.shape==='triangle'?'Base '+d.w+' x Height '+d.h+' mm':d.w+' x '+d.h+' mm'}
 function renderLibrary(){
  const el=document.getElementById('library');el.innerHTML='';
  library.forEach(d=>{
@@ -281,6 +281,31 @@ function rotatedPoint(x,y,cx,cy,rad){const dx=x-cx,dy=y-cy,c=Math.cos(rad),s=Mat
 function drawPolygon(pdf,pts){
  for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length];pdf.line(a[0],a[1],b[0],b[1])}
 }
+function pdfSafeText(value){
+ return String(value ?? '').replace(/[^\x20-\x7E]/g,'').trim();
+}
+function pdfStampLabel(it){
+ const name=pdfSafeText(it.name)||'Stamp';
+ const size=it.shape==='circle'
+   ? `Diameter ${Number(it.w).toFixed(1)} mm`
+   : it.shape==='triangle'
+     ? `Base ${Number(it.w).toFixed(1)} x Height ${Number(it.h).toFixed(1)} mm`
+     : `${Number(it.w).toFixed(1)} x ${Number(it.h).toFixed(1)} mm`;
+ return [name,size];
+}
+function drawStampText(pdf,it,cx,cy,rad){
+ const lines=pdfStampLabel(it);
+ // Use jsPDF's built-in Helvetica so English letters and numbers are always embedded.
+ pdf.setFont('helvetica','normal');
+ pdf.setFontSize(7);
+ pdf.setTextColor(20,20,20);
+ pdf.setLineHeightFactor(1.15);
+ const lineGap=2.9;
+ const startY=cy-(lines.length-1)*lineGap/2+2.4;
+ pdf.text(lines[0],cx,startY,{align:'center',angle:it.rot||0});
+ pdf.setFontSize(5.5);
+ pdf.text(lines[1],cx,startY+lineGap,{align:'center',angle:it.rot||0});
+}
 function getPdfPaperSize(){
  const preset=document.getElementById('pdfPaper')?.value||'A4';
  const sizes={A4:[210,297],A3:[297,420],A5:[148,210]};
@@ -315,6 +340,7 @@ function downloadPDF(){
      .map(([x,y])=>rotatedPoint(x,y,cx,cy,rad));
    drawPolygon(pdf,local);
   }
+  drawStampText(pdf,it,cx,cy,rad);
   pdf.restoreGraphicsState();
  });
  const preset=document.getElementById('pdfPaper')?.value||'A4';

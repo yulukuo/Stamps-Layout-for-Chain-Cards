@@ -17,7 +17,7 @@ aside{width:310px;background:#fff;border-right:1px solid #dfe1e5;padding:16px;ov
 #stage{position:relative;background:#fff;box-shadow:0 3px 18px #0002;transform-origin:top left;flex:none}.grid{position:absolute;inset:0;pointer-events:none;background-image:linear-gradient(#d4d7dc66 1px,transparent 1px),linear-gradient(90deg,#d4d7dc66 1px,transparent 1px);background-size:10px 10px}
 .ruler-x,.ruler-y{position:absolute;background:#fafafa;color:#777;font-size:9px;pointer-events:none}.ruler-x{height:18px;left:0;top:-18px;width:100%;border-bottom:1px solid #aaa}.ruler-y{width:28px;left:-28px;top:0;height:100%;border-right:1px solid #aaa}
 .item{position:absolute;border:1.5px solid #1769e0;background:#e8f0feaa;cursor:move;display:flex;align-items:center;justify-content:center;user-select:none;touch-action:none;transform-origin:center}.item.circle{border-radius:50%}.item.triangle{border:0;background:#e8f0feaa;clip-path:polygon(50% 0,100% 100%,0 100%)}.item.selected{outline:2px solid #ff7a00;outline-offset:2px}.item span{font-size:9px;color:#1355b0;text-align:center;pointer-events:none}.item.triangle span{position:absolute;inset:auto 0 28%;}.handle{position:absolute;width:12px;height:12px;background:#fff;border:1.5px solid #1769e0;border-radius:2px;right:-7px;bottom:-7px;cursor:nwse-resize;touch-action:none}.rotate{position:absolute;left:50%;top:-27px;transform:translateX(-50%);width:20px;height:20px;border-radius:50%;background:#1769e0;color:#fff;font-size:12px;line-height:20px;text-align:center;cursor:grab;touch-action:none}
-.empty{color:#777;font-size:12px;padding:8px 0}.mini-actions{display:flex;gap:6px}.mini-actions button{flex:1}
+.empty{color:#777;font-size:12px;padding:8px 0}.mini-actions{display:flex;gap:6px}.canvas-tabs{display:flex;gap:6px;overflow:auto;padding:2px 0 8px}.canvas-tab{flex:0 0 auto;padding:6px 9px;border:1px solid #c8ccd1;border-radius:7px;background:#fff;font-size:12px;cursor:pointer}.canvas-tab.active{background:#1769e0;color:#fff;border-color:#1769e0}.canvas-tab small{opacity:.8;margin-left:4px}.mini-actions button{flex:1}
 .modal-backdrop{display:none;position:fixed;inset:0;background:#0006;z-index:20;align-items:center;justify-content:center}.modal{background:#fff;border-radius:12px;width:min(500px,calc(100vw - 30px));padding:20px;box-shadow:0 15px 50px #0004}.modal h2{margin:0 0 12px;font-size:18px}.modal p,.modal li{font-size:13px;line-height:1.6}.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:15px}
 @media(max-width:800px){aside{width:280px}.stage-wrap{padding:35px 30px}}
 @media(max-width:650px){
@@ -28,11 +28,12 @@ aside{width:310px;background:#fff;border-right:1px solid #dfe1e5;padding:16px;ov
 
 <style id="creator-credit-style">
 .creator-credit {
-  font-size: 0.72em;
+  font-size: 0.62em;
   font-weight: 500;
   opacity: 0.65;
-  margin-left: 0.45rem;
+  margin-left: 0.55rem;
   white-space: nowrap;
+  vertical-align: middle;
 }
 .creator-credit-fallback {
   position: fixed;
@@ -52,7 +53,7 @@ aside{width:310px;background:#fff;border-right:1px solid #dfe1e5;padding:16px;ov
 </head>
 <body>
 <header>
-<span class="brand-dot"> <span class="creator-credit">@yuluyulu_pc</span></span><h1>Stamp Layout Studio</h1>
+<span class="brand-dot"></span><h1>Stamp Layout Studio <span class="creator-credit">@yuluyulu_pc</span></h1>
 <div class="spacer"></div>
 <button onclick="openHelp()">How to use</button>
 <button onclick="saveProject()">Save Project</button>
@@ -61,6 +62,8 @@ aside{width:310px;background:#fff;border-right:1px solid #dfe1e5;padding:16px;ov
 </header>
 <main>
 <aside>
+<div class="section">
+<div class="title">Canvases <span class="muted">(double-click a tab to rename)</span></div><div id="canvasTabs" class="canvas-tabs"></div><div class="mini-actions"><button onclick="addCanvas()">+ Add Canvas</button><button onclick="duplicateCanvas()">Duplicate</button><button class="danger" onclick="deleteCanvas()">Delete</button></div></div>
 <div class="section">
 <div class="title">Paper</div>
 <div class="row"><label>Size</label><select id="paper" onchange="setPaper()"><option value="A4">A4 · 210 × 297 mm</option><option value="A6">A6 Postcard · 105 × 148 mm</option><option value="CUSTOM">Custom Size</option></select></div>
@@ -94,7 +97,7 @@ Drag a stamp to move it.<br>
 Use the corner handle to resize.<br>
 Use the blue rotate handle to rotate.<br>
 All measurements are in real millimeters.<br>Triangle stamps are isosceles: Base × Height.<br>
-Saved presets remain after reopening the website.
+Saved presets remain after reopening the website.<br>Use ← ↑ → ↓ to move the selected stamp by 1 mm. Ctrl/Cmd+Z to undo and Ctrl/Cmd+Shift+Z or Ctrl/Cmd+Y to redo.
 </div>
 </aside>
 
@@ -104,6 +107,7 @@ Saved presets remain after reopening the website.
 <span class="muted" id="paperInfo"></span><span class="spacer"></span>
 <label class="muted">PDF Paper <select id="pdfPaper"><option value="A4">A4</option><option value="A3">A3</option><option value="A5">A5</option></select></label>
 <label class="muted">Border <input type="checkbox" id="pdfBorder" checked></label>
+<label class="muted">50 mm Calibration <input type="checkbox" id="pdfCalibration" checked></label>
 <label class="muted">Grid <input type="checkbox" id="gridToggle" checked onchange="document.querySelector('.grid').style.display=this.checked?'block':'none'"></label>
 </div>
 <div class="stage-wrap"><div id="stage"><div class="grid"></div><div class="ruler-x"></div><div class="ruler-y"></div></div></div>
@@ -119,7 +123,7 @@ Saved presets remain after reopening the website.
 <li>Click Add to canvas beside a preset.</li>
 <li>Drag, resize, or rotate stamps freely on the canvas. Touch/pointer input is supported on mobile.</li>
 <li>Use the Selected Stamp panel for exact X, Y, dimensions, and rotation.</li>
-<li>Choose the PDF paper size (A4 by default). The canvas is placed at its real millimeter size and centered on the PDF. The canvas border can be shown or hidden.</li>
+<li>Use multiple canvases to prepare several layouts. Each canvas becomes one PDF page when you export.</li><li>Choose the PDF paper size (A4 by default). Each canvas is placed at its real millimeter size and centered on its PDF page. The canvas border and 50 mm calibration line can be shown or hidden.</li>
 </ol>
 <p><b>Printing:</b> choose 100% / Actual Size in your printer dialog. Turn off “Fit to page” or automatic scaling.</p>
 <div class="modal-actions"><button onclick="closeHelp()">Close</button></div>
@@ -127,228 +131,140 @@ Saved presets remain after reopening the website.
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
-const PX=3.7795275591, STORAGE='stamp-layout-studio-v3';
-let paper={w:210,h:297},orientation='portrait',zoomLevel=1,library=[],items=[],selected=null,drag=null;
+const PX=3.7795275591, STORAGE='stamp-layout-studio-v4';
+let canvases=[],activeCanvasId=null,library=[],selected=null,drag=null,zoomLevel=1;
+let historyPast=[],historyFuture=[],historyLock=false;
 
 function uid(){return crypto.randomUUID?crypto.randomUUID():'id-'+Date.now()+'-'+Math.random().toString(36).slice(2)}
-function persist(){localStorage.setItem(STORAGE,JSON.stringify({paper,orientation,library,items}))}
+function activeCanvas(){return canvases.find(c=>c.id===activeCanvasId)||canvases[0]}
+function syncActiveRefs(){const c=activeCanvas(); if(!c)return; paper=c.paper; orientation=c.orientation; items=c.items; selected=c.selected||null}
+function currentState(){
+ const c=activeCanvas(); if(c){c.paper=paper;c.orientation=orientation;c.items=items;c.selected=selected}
+ return JSON.parse(JSON.stringify({canvases,library,activeCanvasId}));
+}
+function applyState(st){
+ canvases=JSON.parse(JSON.stringify(st.canvases||[]));library=JSON.parse(JSON.stringify(st.library||[]));activeCanvasId=st.activeCanvasId||canvases[0]?.id||null;
+ if(!canvases.length) createInitialCanvas();
+ syncActiveRefs();
+ historyLock=true;updateCanvasUI();updatePaperUI();renderLibrary();render();historyLock=false;
+ persist();
+}
+function recordHistory(){
+ if(historyLock)return;
+ historyPast.push(currentState()); if(historyPast.length>80)historyPast.shift(); historyFuture=[];
+}
+function undo(){if(!historyPast.length)return;const now=currentState();historyFuture.push(now);const prev=historyPast.pop();applyState(prev)}
+function redo(){if(!historyFuture.length)return;const now=currentState();historyPast.push(now);const next=historyFuture.pop();applyState(next)}
+function persist(){currentState();localStorage.setItem(STORAGE,JSON.stringify({version:4,canvases,library,activeCanvasId}))}
+function createInitialCanvas(){
+ const id=uid();canvases=[{id,name:'Canvas 1',paper:{w:210,h:297},orientation:'portrait',items:[],selected:null}];activeCanvasId=id;
+}
 function restore(){
  try{
-  const d=JSON.parse(localStorage.getItem(STORAGE)||'null'); if(!d)return;
-  if(d.paper&&d.paper.w>0&&d.paper.h>0)paper=d.paper;
-  orientation=d.orientation||'portrait'; library=Array.isArray(d.library)?d.library:[]; items=Array.isArray(d.items)?d.items:[];
-  document.getElementById('orientation').value=orientation;
-  if(Math.abs(paper.w-210)<.01&&Math.abs(paper.h-297)<.01)document.getElementById('paper').value='A4';
-  else if((Math.abs(paper.w-105)<.01&&Math.abs(paper.h-148)<.01)||(Math.abs(paper.w-148)<.01&&Math.abs(paper.h-105)<.01))document.getElementById('paper').value='A6';
-  else {document.getElementById('paper').value='CUSTOM';document.getElementById('customW').value=paper.w;document.getElementById('customH').value=paper.h}
- }catch(e){console.warn('Could not restore saved data',e)}
+  let raw=localStorage.getItem(STORAGE);
+  if(!raw) raw=localStorage.getItem('stamp-layout-studio-v3');
+  const d=JSON.parse(raw||'null');
+  if(d&&Array.isArray(d.canvases)&&d.canvases.length){
+   canvases=d.canvases.map((c,i)=>({id:c.id||uid(),name:c.name||`Canvas ${i+1}`,paper:c.paper||{w:210,h:297},orientation:c.orientation||'portrait',items:Array.isArray(c.items)?c.items:[],selected:c.selected||null}));
+   library=Array.isArray(d.library)?d.library:[];activeCanvasId=d.activeCanvasId||canvases[0].id;
+  }else if(d&&d.paper){
+   const id=uid();canvases=[{id,name:'Canvas 1',paper:d.paper,orientation:d.orientation||'portrait',items:Array.isArray(d.items)?d.items:[],selected:null}];library=Array.isArray(d.library)?d.library:[];activeCanvasId=id;
+  }else createInitialCanvas();
+ }catch(e){console.warn('Could not restore saved data',e);createInitialCanvas()}
+ syncActiveRefs();
+}
+function updateCanvasUI(){
+ const el=document.getElementById('canvasTabs');if(!el)return;el.innerHTML='';
+ canvases.forEach((c,i)=>{const b=document.createElement('button');b.className='canvas-tab '+(c.id===activeCanvasId?'active':'');b.textContent=c.name||`Canvas ${i+1}`;b.title='Click to switch canvas';b.onclick=()=>switchCanvas(c.id);b.ondblclick=()=>{if(c.id===activeCanvasId)renameCanvas()};el.appendChild(b)})
+}
+function switchCanvas(id){if(id===activeCanvasId)return;currentState();activeCanvasId=id;syncActiveRefs();selected=items.find(x=>x.id===selected)?.id||null;zoomLevel=1;updateCanvasUI();updatePaperUI();render();persist()}
+function addCanvas(){
+ recordHistory();
+ const n=canvases.length+1,id=uid();canvases.push({id,name:`Canvas ${n}`,paper:{w:210,h:297},orientation:'portrait',items:[],selected:null});activeCanvasId=id;syncActiveRefs();selected=null;zoomLevel=1;updateCanvasUI();updatePaperUI();render();persist();
+}
+function duplicateCanvas(){
+ const c=activeCanvas();if(!c)return;recordHistory();
+ const id=uid(),copy=JSON.parse(JSON.stringify(c));copy.id=id;copy.name=`${c.name} Copy`;copy.selected=null;copy.items=copy.items.map(it=>({...it,id:uid()}));canvases.push(copy);activeCanvasId=id;syncActiveRefs();selected=null;updateCanvasUI();updatePaperUI();render();persist();
+}
+function deleteCanvas(){
+ if(canvases.length<=1){alert('At least one canvas is required.');return}
+ const c=activeCanvas();if(!c)return;if(!confirm(`Delete ${c.name}?`))return;recordHistory();
+ const idx=canvases.findIndex(x=>x.id===c.id);canvases=canvases.filter(x=>x.id!==c.id);activeCanvasId=canvases[Math.max(0,idx-1)].id;syncActiveRefs();selected=null;updateCanvasUI();updatePaperUI();render();persist();
+}
+function renameCanvas(){
+ const c=activeCanvas();if(!c)return;const n=prompt('Canvas name:',c.name);if(n===null)return;const name=n.trim();if(!name)return;recordHistory();c.name=name;updateCanvasUI();persist();
+}
+function updatePaperUI(){
+ const p=document.getElementById('paper'),o=document.getElementById('orientation');if(!p||!o)return;
+ if(Math.abs(paper.w-210)<.01&&Math.abs(paper.h-297)<.01)p.value='A4';
+ else if((Math.abs(paper.w-105)<.01&&Math.abs(paper.h-148)<.01)||(Math.abs(paper.w-148)<.01&&Math.abs(paper.h-105)<.01))p.value='A6';
+ else {p.value='CUSTOM';document.getElementById('customW').value=paper.w;document.getElementById('customH').value=paper.h}
+ o.value=orientation;document.getElementById('customPaper').style.display=p.value==='CUSTOM'?'block':'none';
 }
 function setPaper(){
- const p=document.getElementById('paper').value,o=document.getElementById('orientation').value;orientation=o;
+ const p=document.getElementById('paper').value,o=document.getElementById('orientation').value;recordHistory();orientation=o;
  document.getElementById('customPaper').style.display=p==='CUSTOM'?'block':'none';
  let sizes={A4:[210,297],A6:[105,148]};
- if(p==='CUSTOM'){let w=+document.getElementById('customW').value||105,h=+document.getElementById('customH').value||148;if(o==='landscape')[w,h]=[h,w];paper={w,h};render();persist();return}
- let [w,h]=sizes[p];if(o==='landscape')[w,h]=[h,w];paper={w,h};render();persist();
+ if(p==='CUSTOM'){let w=+document.getElementById('customW').value||105,h=+document.getElementById('customH').value||148;if(o==='landscape')[w,h]=[h,w];paper={w,h};activeCanvas().paper=paper;activeCanvas().orientation=orientation;render();persist();return}
+ let [w,h]=sizes[p];if(o==='landscape')[w,h]=[h,w];paper={w,h};activeCanvas().paper=paper;activeCanvas().orientation=orientation;render();persist();
 }
-function applyCustomPaper(){
- const w=+document.getElementById('customW').value,h=+document.getElementById('customH').value;
- if(!(w>0&&h>0)){alert('Please enter positive dimensions.');return}
- document.getElementById('paper').value='CUSTOM';paper={w,h};setPaper();
-}
-function updatePresetFields(){
- const shape=document.getElementById('shape').value;
- const wl=document.getElementById('widthLabel'),hl=document.getElementById('heightLabel');
- if(shape==='circle'){wl.textContent='Diameter (mm)';hl.parentElement.style.display='none'}
- else if(shape==='triangle'){wl.textContent='Base (mm)';hl.textContent='Height (mm)';hl.parentElement.style.display='flex'}
- else {wl.textContent='Width (mm)';hl.textContent='Height (mm)';hl.parentElement.style.display='flex'}
-}
+function applyCustomPaper(){const w=+document.getElementById('customW').value,h=+document.getElementById('customH').value;if(!(w>0&&h>0)){alert('Please enter positive dimensions.');return}document.getElementById('paper').value='CUSTOM';setPaper()}
+function updatePresetFields(){const shape=document.getElementById('shape').value;const wl=document.getElementById('widthLabel'),hl=document.getElementById('heightLabel');if(shape==='circle'){wl.textContent='Diameter (mm)';hl.parentElement.style.display='none'}else if(shape==='triangle'){wl.textContent='Base (mm)';hl.textContent='Height (mm)';hl.parentElement.style.display='flex'}else{wl.textContent='Width (mm)';hl.textContent='Height (mm)';hl.parentElement.style.display='flex'}}
 function addLibrary(){
- const shape=document.getElementById('shape').value,w=+document.getElementById('w').value,h=+document.getElementById('h').value;
- if(!(w>0)){alert('Please enter a positive dimension.');return}
- if(shape!=='circle'&&!(h>0)){alert('Please enter a positive height.');return}
- const d={id:uid(),name:document.getElementById('name').value.trim()||'My Stamp',shape,w,h:shape==='circle'?w:h};
- library.push(d);renderLibrary();persist();
+ const shape=document.getElementById('shape').value,w=+document.getElementById('w').value,h=+document.getElementById('h').value;if(!(w>0)){alert('Please enter a positive dimension.');return}if(shape!=='circle'&&!(h>0)){alert('Please enter a positive height.');return}
+ recordHistory();library.push({id:uid(),name:document.getElementById('name').value.trim()||'My Stamp',shape,w,h:shape==='circle'?w:h});renderLibrary();persist();
 }
-function shapeLabel(d){return d.shape==='circle'?'Diameter '+d.w+' mm':d.shape==='triangle'?'Base '+d.w+' x Height '+d.h+' mm':d.w+' x '+d.h+' mm'}
+function shapeLabel(d){return d.shape==='circle'?'Diameter '+Number(d.w).toFixed(1)+' mm':d.shape==='triangle'?'Base '+Number(d.w).toFixed(1)+' x Height '+Number(d.h).toFixed(1)+' mm':Number(d.w).toFixed(1)+' x '+Number(d.h).toFixed(1)+' mm'}
 function renderLibrary(){
- const el=document.getElementById('library');el.innerHTML='';
- library.forEach(d=>{
-  const row=document.createElement('div');row.className='library-item';
-  row.innerHTML=`<span class="shape-icon ${d.shape==='circle'?'circle':d.shape==='triangle'?'triangle':''}"></span><div class="lib-info"><b>${esc(d.name)}</b><div class="muted">${shapeLabel(d)}</div></div><div class="mini-actions" style="flex:0 0 auto"><button class="edit-lib">Edit</button><button class="add-lib">Add</button><button class="delete-lib danger">Delete</button></div>`;
-  row.querySelector('.add-lib').onclick=()=>addItem(d);
-  row.querySelector('.edit-lib').onclick=()=>editLibrary(d.id);
-  row.querySelector('.delete-lib').onclick=()=>deleteLibrary(d.id);
-  el.appendChild(row);
- });
+ const el=document.getElementById('library');el.innerHTML='';library.forEach(d=>{const row=document.createElement('div');row.className='library-item';row.innerHTML=`<span class="shape-icon ${d.shape==='circle'?'circle':d.shape==='triangle'?'triangle':''}"></span><div class="lib-info"><b>${esc(d.name)}</b><div class="muted">${shapeLabel(d)}</div></div><div class="mini-actions" style="flex:0 0 auto"><button class="edit-lib">Edit</button><button class="add-lib">Add</button><button class="delete-lib danger">Delete</button></div>`;row.querySelector('.add-lib').onclick=()=>addItem(d);row.querySelector('.edit-lib').onclick=()=>editLibrary(d.id);row.querySelector('.delete-lib').onclick=()=>deleteLibrary(d.id);el.appendChild(row)})
 }
-function editLibrary(id){
- const d=library.find(x=>x.id===id);if(!d)return;
- document.getElementById('name').value=d.name;document.getElementById('shape').value=d.shape;document.getElementById('w').value=d.w;document.getElementById('h').value=d.h;updatePresetFields();
- const btn=document.querySelector('.section button.primary');
- btn.textContent='Save Preset Changes';btn.onclick=()=>saveLibraryEdit(id);
- window.scrollTo({top:0,behavior:'smooth'});
-}
-function saveLibraryEdit(id){
- const d=library.find(x=>x.id===id);if(!d)return;
- const shape=document.getElementById('shape').value,w=+document.getElementById('w').value,h=+document.getElementById('h').value;
- if(!(w>0)||(shape!=='circle'&&!(h>0))){alert('Please enter positive dimensions.');return}
- d.name=document.getElementById('name').value.trim()||'My Stamp';d.shape=shape;d.w=w;d.h=shape==='circle'?w:h;
- items.forEach(it=>{if(it.presetId===id){it.name=d.name;it.shape=d.shape;it.w=d.w;it.h=d.h}});
- resetPresetButton();renderLibrary();render();persist();
-}
+function editLibrary(id){const d=library.find(x=>x.id===id);if(!d)return;document.getElementById('name').value=d.name;document.getElementById('shape').value=d.shape;document.getElementById('w').value=d.w;document.getElementById('h').value=d.h;updatePresetFields();const btn=document.querySelector('.section button.primary');btn.textContent='Save Preset Changes';btn.onclick=()=>saveLibraryEdit(id);window.scrollTo({top:0,behavior:'smooth'})}
+function saveLibraryEdit(id){const d=library.find(x=>x.id===id);if(!d)return;const shape=document.getElementById('shape').value,w=+document.getElementById('w').value,h=+document.getElementById('h').value;if(!(w>0)||(shape!=='circle'&&!(h>0))){alert('Please enter positive dimensions.');return}recordHistory();d.name=document.getElementById('name').value.trim()||'My Stamp';d.shape=shape;d.w=w;d.h=shape==='circle'?w:h;canvases.forEach(c=>c.items.forEach(it=>{if(it.presetId===id){it.name=d.name;it.shape=d.shape;it.w=d.w;it.h=d.h}}));resetPresetButton();renderLibrary();render();persist()}
 function resetPresetButton(){const btn=document.querySelector('.section button.primary');btn.textContent='+ Add Preset';btn.onclick=addLibrary}
-function deleteLibrary(id){
- if(!confirm('Delete this saved stamp preset?'))return;
- library=library.filter(x=>x.id!==id);persist();renderLibrary();
-}
-function addItem(d){
- const item={id:uid(),presetId:d.id,name:d.name,shape:d.shape,w:d.w,h:d.h,x:10,y:10,rot:0};
- if(item.x+item.w>paper.w)item.x=Math.max(0,paper.w-item.w);
- if(item.y+item.h>paper.h)item.y=Math.max(0,paper.h-item.h);
- items.push(item);selected=item.id;render();persist();
-}
-function triangleClip(){return 'polygon(50% 0,100% 100%,0 100%)'}
+function deleteLibrary(id){if(!confirm('Delete this saved stamp preset?'))return;recordHistory();library=library.filter(x=>x.id!==id);persist();renderLibrary()}
+function addItem(d){recordHistory();const item={id:uid(),presetId:d.id,name:d.name,shape:d.shape,w:d.w,h:d.h,x:10,y:10,rot:0};if(item.x+item.w>paper.w)item.x=Math.max(0,paper.w-item.w);if(item.y+item.h>paper.h)item.y=Math.max(0,paper.h-item.h);items.push(item);selected=item.id;activeCanvas().items=items;activeCanvas().selected=selected;render();persist()}
 function render(){
- const stage=document.getElementById('stage');stage.style.width=paper.w*PX+'px';stage.style.height=paper.h*PX+'px';
- [...stage.querySelectorAll('.item')].forEach(e=>e.remove());
- items.forEach(it=>{
-  const e=document.createElement('div');e.className='item '+(it.shape==='circle'?'circle ':it.shape==='triangle'?'triangle ':'')+(selected===it.id?'selected':'');
-  e.style.left=it.x*PX+'px';e.style.top=it.y*PX+'px';e.style.width=it.w*PX+'px';e.style.height=it.h*PX+'px';e.style.transform=`rotate(${it.rot}deg)`;
-  e.innerHTML=`<span>${esc(it.name)}<br>${shapeLabel(it)}</span><div class="handle"></div><div class="rotate">↻</div>`;
-  e.addEventListener('pointerdown',ev=>startPointer(ev,it,e,'move'));
-  e.querySelector('.handle').addEventListener('pointerdown',ev=>startPointer(ev,it,e,'resize'));
-  e.querySelector('.rotate').addEventListener('pointerdown',ev=>startPointer(ev,it,e,'rotate'));
-  stage.appendChild(e);
- });
- updateProps();document.getElementById('zoomVal').value=Math.round(zoomLevel*100)+'%';document.getElementById('paperInfo').textContent=`Canvas ${paper.w.toFixed(1)} × ${paper.h.toFixed(1)} mm`;stage.style.transform=`scale(${zoomLevel})`;
+ const stage=document.getElementById('stage');stage.style.width=paper.w*PX+'px';stage.style.height=paper.h*PX+'px';[...stage.querySelectorAll('.item')].forEach(e=>e.remove());
+ items.forEach(it=>{const e=document.createElement('div');e.className='item '+(it.shape==='circle'?'circle ':it.shape==='triangle'?'triangle ':'')+(selected===it.id?'selected':'');e.style.left=it.x*PX+'px';e.style.top=it.y*PX+'px';e.style.width=it.w*PX+'px';e.style.height=it.h*PX+'px';e.style.transform=`rotate(${it.rot}deg)`;e.innerHTML=`<span>${esc(it.name)}<br>${shapeLabel(it)}</span><div class="handle"></div><div class="rotate">↻</div>`;e.addEventListener('pointerdown',ev=>startPointer(ev,it,e,'move'));e.querySelector('.handle').addEventListener('pointerdown',ev=>startPointer(ev,it,e,'resize'));e.querySelector('.rotate').addEventListener('pointerdown',ev=>startPointer(ev,it,e,'rotate'));stage.appendChild(e)});
+ updateProps();document.getElementById('zoomVal').value=Math.round(zoomLevel*100)+'%';document.getElementById('paperInfo').textContent=`${activeCanvas()?.name||'Canvas'} · ${paper.w.toFixed(1)} × ${paper.h.toFixed(1)} mm`;stage.style.transform=`scale(${zoomLevel})`;
 }
-function startPointer(ev,it,e,type){
- ev.preventDefault();ev.stopPropagation();selected=it.id;
- const r=e.getBoundingClientRect();
- if(type==='move')drag={type,it,sx:ev.clientX,sy:ev.clientY,ox:it.x,oy:it.y};
- if(type==='resize')drag={type,it,sx:ev.clientX,sy:ev.clientY,ow:it.w,oh:it.h};
- if(type==='rotate')drag={type,it,cx:r.left+r.width/2,cy:r.top+r.height/2};
- if(ev.currentTarget&&ev.currentTarget.setPointerCapture)try{ev.currentTarget.setPointerCapture(ev.pointerId)}catch(_){}
- render();window.onpointermove=move;window.onpointerup=end;window.onpointercancel=end;
-}
-function move(ev){
- if(!drag)return;const it=drag.it;
- if(drag.type==='move'){
-  it.x=Math.max(0,Math.min(paper.w-it.w,drag.ox+(ev.clientX-drag.sx)/(PX*zoomLevel)));
-  it.y=Math.max(0,Math.min(paper.h-it.h,drag.oy+(ev.clientY-drag.sy)/(PX*zoomLevel)));
- }
- if(drag.type==='resize'){
-  it.w=Math.max(1,Math.min(paper.w-it.x,drag.ow+(ev.clientX-drag.sx)/(PX*zoomLevel)));
-  it.h=it.shape==='circle'?Math.min(it.w,paper.h-it.y):Math.max(1,Math.min(paper.h-it.y,drag.oh+(ev.clientY-drag.sy)/(PX*zoomLevel)));
- }
- if(drag.type==='rotate')it.rot=Math.round(Math.atan2(ev.clientY-drag.cy,ev.clientX-drag.cx)*180/Math.PI+90);
- render();
-}
-function end(){if(drag)persist();drag=null;window.onpointermove=null;window.onpointerup=null;window.onpointercancel=null}
+function startPointer(ev,it,e,type){ev.preventDefault();ev.stopPropagation();selected=it.id;activeCanvas().selected=selected;recordHistory();const r=e.getBoundingClientRect();if(type==='move')drag={type,it,sx:ev.clientX,sy:ev.clientY,ox:it.x,oy:it.y};if(type==='resize')drag={type,it,sx:ev.clientX,sy:ev.clientY,ow:it.w,oh:it.h};if(type==='rotate')drag={type,it,cx:r.left+r.width/2,cy:r.top+r.height/2};if(ev.currentTarget&&ev.currentTarget.setPointerCapture)try{ev.currentTarget.setPointerCapture(ev.pointerId)}catch(_){}render();window.onpointermove=move;window.onpointerup=end;window.onpointercancel=end}
+function move(ev){if(!drag)return;const it=drag.it;if(drag.type==='move'){it.x=Math.max(0,Math.min(paper.w-it.w,drag.ox+(ev.clientX-drag.sx)/(PX*zoomLevel)));it.y=Math.max(0,Math.min(paper.h-it.h,drag.oy+(ev.clientY-drag.sy)/(PX*zoomLevel)))}if(drag.type==='resize'){it.w=Math.max(1,Math.min(paper.w-it.x,drag.ow+(ev.clientX-drag.sx)/(PX*zoomLevel)));it.h=it.shape==='circle'?Math.min(it.w,paper.h-it.y):Math.max(1,Math.min(paper.h-it.y,drag.oh+(ev.clientY-drag.sy)/(PX*zoomLevel)))}if(drag.type==='rotate')it.rot=Math.round(Math.atan2(ev.clientY-drag.cy,ev.clientX-drag.cx)*180/Math.PI+90);render()}
+function end(){if(drag){activeCanvas().items=items;activeCanvas().selected=selected;persist()}drag=null;window.onpointermove=null;window.onpointerup=null;window.onpointercancel=null}
 function updateProps(){
- const box=document.getElementById('props'),it=items.find(x=>x.id===selected);
- if(!it){box.innerHTML='<div class="empty">Select a stamp on the canvas.</div>';return}
- const dims=it.shape==='triangle'?`<div class="row"><label>Base (mm)</label><input id="pw" type="number" value="${it.w.toFixed(1)}" step=".1"></div><div class="row"><label>Height (mm)</label><input id="ph" type="number" value="${it.h.toFixed(1)}" step=".1"></div>`:
- it.shape==='circle'?`<div class="row"><label>Diameter (mm)</label><input id="pw" type="number" value="${it.w.toFixed(1)}" step=".1"></div>`:
- `<div class="row"><label>Width (mm)</label><input id="pw" type="number" value="${it.w.toFixed(1)}" step=".1"></div><div class="row"><label>Height (mm)</label><input id="ph" type="number" value="${it.h.toFixed(1)}" step=".1"></div>`;
+ const box=document.getElementById('props'),it=items.find(x=>x.id===selected);if(!it){box.innerHTML='<div class="empty">Select a stamp on the canvas.</div>';return}
+ const dims=it.shape==='triangle'?`<div class="row"><label>Base (mm)</label><input id="pw" type="number" value="${it.w.toFixed(1)}" step=".1"></div><div class="row"><label>Height (mm)</label><input id="ph" type="number" value="${it.h.toFixed(1)}" step=".1"></div>`:it.shape==='circle'?`<div class="row"><label>Diameter (mm)</label><input id="pw" type="number" value="${it.w.toFixed(1)}" step=".1"></div>`:`<div class="row"><label>Width (mm)</label><input id="pw" type="number" value="${it.w.toFixed(1)}" step=".1"></div><div class="row"><label>Height (mm)</label><input id="ph" type="number" value="${it.h.toFixed(1)}" step=".1"></div>`;
  box.innerHTML=`<div class="row"><label>Name</label><input id="pn" value="${esc(it.name)}"></div><div class="row"><label>X (mm)</label><input id="px" type="number" value="${it.x.toFixed(1)}" step=".1"></div><div class="row"><label>Y (mm)</label><input id="py" type="number" value="${it.y.toFixed(1)}" step=".1"></div>${dims}<div class="row"><label>Rotation</label><input id="pr" type="number" value="${it.rot}" step="1"></div>`;
- ['pn','px','py','pw','ph','pr'].forEach(id=>{const node=document.getElementById(id);if(!node)return;node.onchange=()=>{
-  const k={pn:'name',px:'x',py:'y',pw:'w',ph:'h',pr:'rot'}[id],v=node.value;
-  if(k==='name')it.name=v;else it[k]=+v;
-  if(it.shape==='circle'&&k==='pw')it.w=it.h=Math.max(1,+v);
-  if(it.shape==='triangle'||it.shape==='rect'){it.w=Math.max(1,it.w);it.h=Math.max(1,it.h)}
-  it.x=Math.max(0,Math.min(paper.w-it.w,it.x));it.y=Math.max(0,Math.min(paper.h-it.h,it.y));
-  render();persist();
- }});
+ ['pn','px','py','pw','ph','pr'].forEach(id=>{const node=document.getElementById(id);if(!node)return;node.onchange=()=>{const k={pn:'name',px:'x',py:'y',pw:'w',ph:'h',pr:'rot'}[id],v=node.value;recordHistory();if(k==='name')it.name=v;else it[k]=+v;if(it.shape==='circle'&&k==='pw')it.w=it.h=Math.max(1,+v);if(it.shape==='triangle'||it.shape==='rect'){it.w=Math.max(1,it.w);it.h=Math.max(1,it.h)}it.x=Math.max(0,Math.min(paper.w-it.w,it.x));it.y=Math.max(0,Math.min(paper.h-it.h,it.y));activeCanvas().items=items;activeCanvas().selected=selected;render();persist()}})
 }
-function deleteSelected(){if(selected){items=items.filter(x=>x.id!==selected);selected=null;render();persist()}}
-function duplicateSelected(){const it=items.find(x=>x.id===selected);if(!it)return;const n={...it,id:uid(),x:Math.min(paper.w-it.w,it.x+5),y:Math.min(paper.h-it.h,it.y+5)};items.push(n);selected=n.id;render();persist()}
-function clearAll(){if(confirm('Clear all stamps from the canvas?')){items=[];selected=null;render();persist()}}
+function deleteSelected(){if(selected){recordHistory();items=items.filter(x=>x.id!==selected);selected=null;activeCanvas().items=items;activeCanvas().selected=null;render();persist()}}
+function duplicateSelected(){const it=items.find(x=>x.id===selected);if(!it)return;recordHistory();const n={...it,id:uid(),x:Math.min(paper.w-it.w,it.x+5),y:Math.min(paper.h-it.h,it.y+5)};items.push(n);selected=n.id;activeCanvas().items=items;activeCanvas().selected=selected;render();persist()}
+function clearAll(){if(confirm('Clear all stamps from the current canvas?')){recordHistory();items=[];selected=null;activeCanvas().items=items;activeCanvas().selected=null;render();persist()}}
 function zoom(d){zoomLevel=Math.min(2,Math.max(.5,zoomLevel+d));render()}function resetZoom(){zoomLevel=1;render()}
+function moveSelectedBy(dx,dy){const it=items.find(x=>x.id===selected);if(!it)return;const nx=Math.max(0,Math.min(paper.w-it.w,it.x+dx)),ny=Math.max(0,Math.min(paper.h-it.h,it.y+dy));if(nx===it.x&&ny===it.y)return;recordHistory();it.x=nx;it.y=ny;activeCanvas().items=items;render();persist()}
+window.addEventListener('keydown',e=>{const tag=(e.target?.tagName||'').toLowerCase();if(tag==='input'||tag==='textarea'||tag==='select')return;const mod=e.ctrlKey||e.metaKey;if(mod&&e.key.toLowerCase()==='z'){e.preventDefault();if(e.shiftKey)redo();else undo();return}if(mod&&e.key.toLowerCase()==='y'){e.preventDefault();redo();return}if(selected&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(e.key)){e.preventDefault();const d=1;e.key==='ArrowLeft'&&moveSelectedBy(-d,0);e.key==='ArrowRight'&&moveSelectedBy(d,0);e.key==='ArrowUp'&&moveSelectedBy(0,-d);e.key==='ArrowDown'&&moveSelectedBy(0,d)}});
 function esc(s){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
-function saveProject(){const blob=new Blob([JSON.stringify({paper,orientation,library,items},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='stamp-layout-project.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
-function loadProject(){
- const inp=document.createElement('input');inp.type='file';inp.accept='.json';
- inp.onchange=()=>{const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{
-  const d=JSON.parse(r.result);paper=d.paper;orientation=d.orientation||'portrait';library=d.library||[];items=d.items||[];
-  document.getElementById('orientation').value=orientation;
-  const isA4=(paper.w===210&&paper.h===297)||(paper.w===297&&paper.h===210),isA6=(paper.w===105&&paper.h===148)||(paper.w===148&&paper.h===105);
-  document.getElementById('paper').value=isA4?'A4':isA6?'A6':'CUSTOM';document.getElementById('customW').value=paper.w;document.getElementById('customH').value=paper.h;document.getElementById('customPaper').style.display=isA4||isA6?'none':'block';
-  persist();renderLibrary();render();
- }catch(e){alert('Invalid project file.')}};r.readAsText(f)};inp.click();
-}
-function rotatedPoint(x,y,cx,cy,rad){const dx=x-cx,dy=y-cy,c=Math.cos(rad),s=Math.sin(rad);return [cx+dx*c-dy*s,cy+dx*s+dy*c]}
-function drawPolygon(pdf,pts){
- for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length];pdf.line(a[0],a[1],b[0],b[1])}
-}
-function pdfSafeText(value){
- return String(value ?? '').replace(/[^\x20-\x7E]/g,'').trim();
-}
-function pdfStampLabel(it){
- const name=pdfSafeText(it.name)||'Stamp';
- const size=it.shape==='circle'
-   ? `Diameter ${Number(it.w).toFixed(1)} mm`
-   : it.shape==='triangle'
-     ? `Base ${Number(it.w).toFixed(1)} x Height ${Number(it.h).toFixed(1)} mm`
-     : `${Number(it.w).toFixed(1)} x ${Number(it.h).toFixed(1)} mm`;
- return [name,size];
-}
-function drawStampText(pdf,it,cx,cy,rad){
- const lines=pdfStampLabel(it);
- // Use jsPDF's built-in Helvetica so English letters and numbers are always embedded.
- pdf.setFont('helvetica','normal');
- pdf.setFontSize(7);
- pdf.setTextColor(20,20,20);
- pdf.setLineHeightFactor(1.15);
- const lineGap=2.9;
- const startY=cy-(lines.length-1)*lineGap/2+2.4;
- pdf.text(lines[0],cx,startY,{align:'center',angle:it.rot||0});
- pdf.setFontSize(5.5);
- pdf.text(lines[1],cx,startY+lineGap,{align:'center',angle:it.rot||0});
-}
-function getPdfPaperSize(){
- const preset=document.getElementById('pdfPaper')?.value||'A4';
- const sizes={A4:[210,297],A3:[297,420],A5:[148,210]};
- return sizes[preset]||sizes.A4;
-}
+function saveProject(){const blob=new Blob([JSON.stringify({version:4,canvases,library,activeCanvasId},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='stamp-layout-project.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function loadProject(){const inp=document.createElement('input');inp.type='file';inp.accept='.json';inp.onchange=()=>{const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);recordHistory();if(Array.isArray(d.canvases)){canvases=d.canvases;library=d.library||[];activeCanvasId=d.activeCanvasId||canvases[0]?.id}else{const id=uid();canvases=[{id,name:'Canvas 1',paper:d.paper,orientation:d.orientation||'portrait',items:d.items||[],selected:null}];library=d.library||[];activeCanvasId=id}syncActiveRefs();selected=null;persist();updateCanvasUI();updatePaperUI();renderLibrary();render()}catch(e){alert('Invalid project file.')}};r.readAsText(f)};inp.click()}
+function rotatedPoint(x,y,cx,cy,rad){const dx=x-cx,dy=y-cy,c=Math.cos(rad),s=Math.sin(rad);return[cx+dx*c-dy*s,cy+dx*s+dy*c]}
+function drawPolygon(pdf,pts){for(let i=0;i<pts.length;i++){const a=pts[i],b=pts[(i+1)%pts.length];pdf.line(a[0],a[1],b[0],b[1])}}
+function pdfSafeText(value){return String(value??'').replace(/[^\x20-\x7E]/g,'').trim()}
+function pdfStampLabel(it){const name=pdfSafeText(it.name)||'Stamp';const size=it.shape==='circle'?`Diameter ${Number(it.w).toFixed(1)} mm`:it.shape==='triangle'?`Base ${Number(it.w).toFixed(1)} x Height ${Number(it.h).toFixed(1)} mm`:`${Number(it.w).toFixed(1)} x ${Number(it.h).toFixed(1)} mm`;return[name,size]}
+function drawStampText(pdf,it,cx,cy){const lines=pdfStampLabel(it);pdf.setFont('helvetica','normal');pdf.setFontSize(7);pdf.setTextColor(20,20,20);pdf.setLineHeightFactor(1.15);const lineGap=2.9;const startY=cy-(lines.length-1)*lineGap/2+2.4;pdf.text(lines[0],cx,startY,{align:'center',angle:it.rot||0});pdf.setFontSize(5.5);pdf.text(lines[1],cx,startY+lineGap,{align:'center',angle:it.rot||0})}
+function getPdfPaperSize(){const preset=document.getElementById('pdfPaper')?.value||'A4';const sizes={A4:[210,297],A3:[297,420],A5:[148,210]};return sizes[preset]||sizes.A4}
+function drawCalibration(pdf,pdfW,pdfH,preferredX,preferredY){const len=50,margin=8;let x=preferredX,y=preferredY;if(x+len+18>pdfW)x=margin;if(y+8>pdfH)y=pdfH-8;if(x+len+18>pdfW||y-4<0)return;pdf.setDrawColor(70,70,70);pdf.setLineWidth(.25);pdf.line(x,y,x+len,y);pdf.line(x,y-1.5,x,y+1.5);pdf.line(x+len,y-1.5,x+len,y+1.5);pdf.setFont('helvetica','normal');pdf.setFontSize(5.5);pdf.setTextColor(60,60,60);pdf.text('50 mm calibration',x+len/2,y+4,{align:'center'})}
+function drawCanvasToPdf(pdf,c,pdfW,pdfH,showBorder,showCalibration){const offsetX=(pdfW-c.paper.w)/2,offsetY=(pdfH-c.paper.h)/2;if(offsetX<0||offsetY<0)throw new Error(`The selected PDF paper is smaller than ${c.name} (${c.paper.w.toFixed(1)} × ${c.paper.h.toFixed(1)} mm). Choose a larger PDF paper or change the canvas orientation.`);if(showBorder){pdf.setDrawColor(120,120,120);pdf.setLineWidth(.25);pdf.rect(offsetX,offsetY,c.paper.w,c.paper.h,'S')}c.items.forEach(it=>{const cx=offsetX+it.x+it.w/2,cy=offsetY+it.y+it.h/2,rad=it.rot*Math.PI/180;pdf.saveGraphicsState();pdf.setDrawColor(20,20,20);pdf.setLineWidth(.25);if(it.shape==='circle'){pdf.circle(cx,cy,it.w/2,'S')}else if(it.shape==='triangle'){const local=[[it.w/2,0],[it.w,it.h],[0,it.h]].map(([x,y])=>rotatedPoint(offsetX+it.x+x,offsetY+it.y+y,cx,cy,rad));drawPolygon(pdf,local)}else{const local=[[offsetX+it.x,offsetY+it.y],[offsetX+it.x+it.w,offsetY+it.y],[offsetX+it.x+it.w,offsetY+it.y+it.h],[offsetX+it.x,offsetY+it.y+it.h]].map(([x,y])=>rotatedPoint(x,y,cx,cy,rad));drawPolygon(pdf,local)}drawStampText(pdf,it,cx,cy);pdf.restoreGraphicsState()});if(showCalibration){const cy=offsetY+c.paper.h+10<=pdfH-8?offsetY+c.paper.h+4:Math.min(pdfH-8,offsetY+c.paper.h-4);const cx=Math.max(8,offsetX);drawCalibration(pdf,pdfW,pdfH,cx,cy)}}
 function downloadPDF(){
  if(!window.jspdf){alert('The PDF library could not be loaded. Please check your internet connection and try again.');return}
- const {jsPDF}=window.jspdf;
- const [pdfW,pdfH]=getPdfPaperSize();
- const pdf=new jsPDF({orientation:pdfW>pdfH?'landscape':'portrait',unit:'mm',format:[pdfW,pdfH],compress:true});
- pdf.setProperties({title:'Stamp Layout',subject:'Stamp layout exported onto a PDF sheet at real millimeter dimensions'});
- const offsetX=(pdfW-paper.w)/2;
- const offsetY=(pdfH-paper.h)/2;
- if(offsetX<0||offsetY<0){
-   alert(`The ${document.getElementById('pdfPaper')?.value||'A4'} PDF is smaller than the current canvas (${paper.w.toFixed(1)} × ${paper.h.toFixed(1)} mm). Please choose a larger PDF paper size.`);
-   return;
- }
- if(document.getElementById('pdfBorder')?.checked){
-   pdf.setDrawColor(120,120,120);pdf.setLineWidth(.25);pdf.rect(offsetX,offsetY,paper.w,paper.h,'S');
- }
- items.forEach(it=>{
-  const cx=offsetX+it.x+it.w/2,cy=offsetY+it.y+it.h/2,rad=it.rot*Math.PI/180;
-  pdf.saveGraphicsState();pdf.setDrawColor(20,20,20);pdf.setLineWidth(.25);
-  if(it.shape==='circle'){
-   const r=it.w/2;pdf.circle(cx,cy,r,'S');
-  }else if(it.shape==='triangle'){
-   const local=[[it.w/2,0],[it.w,it.h],[0,it.h]].map(([x,y])=>rotatedPoint(offsetX+it.x+x,offsetY+it.y+y,cx,cy,rad));
-   drawPolygon(pdf,local);
-  }else{
-   const local=[[offsetX+it.x,offsetY+it.y],[offsetX+it.x+it.w,offsetY+it.y],
-     [offsetX+it.x+it.w,offsetY+it.y+it.h],[offsetX+it.x,offsetY+it.y+it.h]]
-     .map(([x,y])=>rotatedPoint(x,y,cx,cy,rad));
-   drawPolygon(pdf,local);
-  }
-  drawStampText(pdf,it,cx,cy,rad);
-  pdf.restoreGraphicsState();
- });
- const preset=document.getElementById('pdfPaper')?.value||'A4';
- pdf.save(`stamp-layout-${preset.toLowerCase()}.pdf`);
+ const {jsPDF}=window.jspdf,[pdfW,pdfH]=getPdfPaperSize(),preset=document.getElementById('pdfPaper')?.value||'A4';
+ const pdf=new jsPDF({orientation:pdfW>pdfH?'landscape':'portrait',unit:'mm',format:[pdfW,pdfH],compress:true});pdf.setProperties({title:'Stamp Layout',subject:'Multiple stamp layouts exported at real millimeter dimensions'});
+ const showBorder=document.getElementById('pdfBorder')?.checked,showCalibration=document.getElementById('pdfCalibration')?.checked;
+ try{drawCanvasToPdf(pdf,canvases[0],pdfW,pdfH,showBorder,showCalibration);for(let i=1;i<canvases.length;i++){pdf.addPage([pdfW,pdfH],pdfW>pdfH?'landscape':'portrait');drawCanvasToPdf(pdf,canvases[i],pdfW,pdfH,showBorder,showCalibration)}}catch(err){alert(err.message);return}
+ pdf.save(`stamp-layout-${preset.toLowerCase()}-${canvases.length}-pages.pdf`)
 }
 function openHelp(){document.getElementById('helpModal').style.display='flex'}function closeHelp(){document.getElementById('helpModal').style.display='none'}
 
-restore();updatePresetFields();renderLibrary();render();
+restore();updatePresetFields();updateCanvasUI();updatePaperUI();renderLibrary();render();
 </script>
 </body>
 </html>
